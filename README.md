@@ -48,6 +48,6 @@ In short, gst123 needs to be built and installed with:
 
 I added some often used features.
 
-![Help Screen](pics/features.png)  
+![Help Screen](pics/features2.png)  
 
 

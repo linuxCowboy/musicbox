@@ -164,6 +164,7 @@ struct Player : public KeyHandler
   guint         play_position;
   int           cols;
   int           stop;
+  int           rep1;
   Tags          tags;
   GstState      last_state;
   string        old_tag_str;
@@ -353,6 +354,8 @@ struct Player : public KeyHandler
             else
               play_position += jump - 1;
           }
+        else if (jump < -1 && rep1)
+          --play_position;
 
         if (play_position >= uris.size())
           {
@@ -379,7 +382,7 @@ struct Player : public KeyHandler
               }
           }
 
-        if (play_position < uris.size() && (jump > -2 || !stop))
+        if (play_position < uris.size() && (jump > -2 || rep1 || !stop))
           {
             string uri = uris[play_position++];
 
@@ -633,6 +636,12 @@ struct Player : public KeyHandler
   }
 
   void
+  toggle_rep1()
+  {
+    rep1 ^= 1;
+  }
+
+  void
   toggle_fullscreen()
   {
     gtk_interface.toggle_fullscreen();
@@ -670,7 +679,7 @@ struct Player : public KeyHandler
   void print_keyboard_help();
   void add_uri_or_directory (const string& name);
 
-  Player() : playbin (0), loop(0), play_position (0), stop(0)
+  Player() : playbin (0), loop(0), play_position (0), stop(0), rep1(0)
   {
     playback_rate = 1.0;
     playback_rate_step = pow (2, 1.0 / 7); // approximately 10%, but 7 steps will make playback rate double
@@ -997,6 +1006,10 @@ cb_print_position (gpointer *data)
 
       string status, blanks;
 
+      // Print [REP1] if single repeat:
+      if (player.rep1)
+        status += " [REP1]";
+
       // Print [STOP] if stop after current:
       if (player.stop)
         status += " [STOP]";
@@ -1162,6 +1175,9 @@ Player::process_input (int key)
       case 'p':
         play_prev();
         break;
+      case 'r':
+        toggle_rep1();
+        break;
       case '0':
       case '1':
       case '2':
@@ -1183,7 +1199,7 @@ Player::process_input (int key)
       case 'o':
         normal_size();
         break;
-      case 'r':
+      case 'R':
         set_playback_rate (playback_rate * -1);
         break;
       case KEY_HANDLER_BACKSPACE:
@@ -1221,12 +1237,13 @@ Player::print_keyboard_help()
   printf ("   +/-                  -     increase/decrease volume by 10%%\n");
   printf ("   space                -     toggle pause\n");
   printf ("   t                    -     toggle stop after current\n");
+  printf ("   r                    -     toggle single repeat\n");
   printf ("   m                    -     toggle mute/unmute\n");
   printf ("   f                    -     toggle fullscreen (only for videos)\n");
   printf ("   o                    -     normal video size (only for videos)\n");
   printf ("   A/a                  -     increase/decrease opacity by 10%% (only for videos)\n");
   printf ("   s                    -     toggle subtitles  (only for videos)\n");
-  printf ("   r                    -     reverse playback\n");
+  printf ("   R                    -     reverse playback\n");
   printf ("   [ ]                  -     playback rate 10%% faster/slower\n");
   printf ("   { }                  -     playback rate 2x faster/slower\n");
   printf ("   Backspace            -     playback rate 1x\n");
