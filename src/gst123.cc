@@ -358,6 +358,9 @@ struct Player : public KeyHandler
         else if (jump <= -2 && rep1)
           --play_position;
 
+        if (rep1 && jump == -3)
+          g_usleep((1 << 20) * 4);
+
         if (play_position >= uris.size())
           {
             if (jump >= -1)
