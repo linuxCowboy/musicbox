@@ -164,6 +164,7 @@ struct Player : public KeyHandler
   guint         play_position;
   int           cols;
   int           stop;
+  int           wait;
   int           rep1;
   Tags          tags;
   GstState      last_state;
@@ -339,27 +340,31 @@ struct Player : public KeyHandler
     return ret;
   }
 
-/* jump: -1 forced play, 0 start of list, 1-9 add to current */
+/* jump: -[21] forced play, 0 start of list, 1-9 add to current */
   void
-  play_next(int jump=-2)
+  play_next(int jump=-3)
   {
     reset_tags (RESET_ALL_TAGS);
 
     for (;;)
       {
-        if (jump > -1)
+        if (jump >= 0)
           {
             if (!jump)
               play_position = 0;
             else
               play_position += jump - 1;
           }
-        else if (jump < -1 && rep1)
+        else if (jump <= -2 && rep1)
           --play_position;
 
         if (play_position >= uris.size())
           {
-            if (options.repeat)
+            if (jump >= -1)
+              {
+                play_position = uris.size() - 1;
+              }
+            else if (options.repeat)
               {
                 if (uris.empty())
                   {
@@ -368,8 +373,6 @@ struct Player : public KeyHandler
                   }
                 play_position = 0;
               }
-            else
-              play_position = uris.size() - 1;
           }
 
         if (options.shuffle && play_position == 0)
@@ -382,7 +385,7 @@ struct Player : public KeyHandler
               }
           }
 
-        if (play_position < uris.size() && (jump > -2 || rep1 || !stop))
+        if (play_position < uris.size() && (jump > -3 || !stop))
           {
             string uri = uris[play_position++];
 
@@ -423,7 +426,15 @@ struct Player : public KeyHandler
           }
         else
           {
-            quit();
+            if (stop)
+              {
+                gst_element_set_state (playbin, GST_STATE_PAUSED);
+                wait = 1;
+                if (rep1)
+                  ++play_position;
+              }
+            else
+              quit();
             return; // -> done
           }
       }
@@ -596,6 +607,11 @@ struct Player : public KeyHandler
   {
     if (last_state == GST_STATE_PAUSED) {
       gst_element_set_state (playbin, GST_STATE_PLAYING);
+      if (wait)
+        {
+          wait = 0;
+          play_next(-2);
+        }
     }
     else if (last_state == GST_STATE_PLAYING) {
       gst_element_set_state (playbin, GST_STATE_PAUSED);
@@ -679,7 +695,7 @@ struct Player : public KeyHandler
   void print_keyboard_help();
   void add_uri_or_directory (const string& name);
 
-  Player() : playbin (0), loop(0), play_position (0), stop(0), rep1(0)
+  Player() : playbin (0), loop(0), play_position (0), stop(0), wait(0), rep1(0)
   {
     playback_rate = 1.0;
     playback_rate_step = pow (2, 1.0 / 7); // approximately 10%, but 7 steps will make playback rate double
