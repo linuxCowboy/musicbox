@@ -169,6 +169,7 @@ struct Player : public KeyHandler
   Tags          tags;
   GstState      last_state;
   string        old_tag_str;
+  string        track;
 
   double        playback_rate;
   double        playback_rate_step;
@@ -240,6 +241,7 @@ struct Player : public KeyHandler
 	*si = ' ';
     return s;
   }
+
   string
   format_tags()
   {
@@ -340,7 +342,7 @@ struct Player : public KeyHandler
     return ret;
   }
 
-/* jump: -[21] forced play, 0 start of list, 1-9 add to current */
+/* jump: -[21] forced play, 0 last, 1+ title nr */
   void
   play_next(int jump=-3)
   {
@@ -351,9 +353,9 @@ struct Player : public KeyHandler
         if (jump >= 0)
           {
             if (!jump)
-              play_position = 0;
+              play_position = uris.size() - 1;
             else
-              play_position += jump - 1;
+              play_position = jump - 1;
           }
         else if (jump <= -2 && rep1)
           --play_position;
@@ -694,6 +696,12 @@ struct Player : public KeyHandler
       g_main_loop_quit (loop);
   }
 
+  void
+  pick_next (int key)
+  {
+    track += key;
+  }
+
   void process_input (int key);
   void print_keyboard_help();
   void add_uri_or_directory (const string& name);
@@ -991,69 +999,94 @@ cb_print_position (gpointer *data)
 {
   Player& player = *(Player *)data;
   gint64 pos, len;
+  static guint dur;
+  static string last;
 
-  player.display_tags();
-
-  if (Compat::element_query_position (player.playbin, GST_FORMAT_TIME, &pos) &&
-      Compat::element_query_duration (player.playbin, GST_FORMAT_TIME, &len))
+  ++dur;
+  if (player.track.size())
     {
-      guint pos_ms = (pos % GST_SECOND) / 1000000;
-      guint len_ms = (len % GST_SECOND) / 1000000;
-      guint pos_sec = pos / GST_SECOND;
-      guint len_sec = len / GST_SECOND;
-      guint pos_min = pos_sec / 60;
-      guint len_min = len_sec / 60;
-
-      player.overwrite_time_display();
-      Msg::print ("\rTime: %01u:%02u:%02u.%02u", pos_min / 60, pos_min % 60, pos_sec % 60, pos_ms / 10);
-      if (len > 0)   /* streams (i.e. http) have len == -1 */
-        Msg::print (" of %01u:%02u:%02u.%02u", len_min / 60, len_min % 60, len_sec % 60, len_ms / 10);
-
-      string message = Msg::status();
-      if (message != "")
+      if (!(dur % 6))
         {
-          Msg::print (" | %s", message.c_str());
+          if (last == player.track)
+            {
+              guint ui = atoi(last.c_str());
+              last.clear();
+              player.track.clear();
+              player.play_next(ui);
+            }
+          else
+            {
+              player.overwrite_time_display();
+              g_print(" %s", player.track.c_str());
+              last = player.track;
+            }
         }
-      else
-        {
-          /* only print bitrate if no status message needs to be shown, in
-           * order to avoid too long output lines
-           */
-          if (player.tags.bitrate > 0)
-            Msg::print (" | Bitrate: %.1f kbit/sec", player.tags.bitrate / 1000.);
-        }
-
-      string status, blanks;
-
-      // Print [REP1] if single repeat:
-      if (player.rep1)
-        status += " [REP1]";
-
-      // Print [STOP] if stop after current:
-      if (player.stop)
-        status += " [STOP]";
-
-      // Print [MUTED] if sound is muted:
-      gboolean mute;
-      g_object_get (G_OBJECT (player.playbin), "mute", &mute, NULL);
-
-      if (mute)
-        status += " [MUTED]";
-      else
-        blanks += "        ";
-
-      // Print [PAUSED] if paused:
-      bool pause = (player.last_state == GST_STATE_PAUSED);
-
-      if (pause)
-        status += " [PAUSED]";
-      else
-        blanks += "         ";
-
-      Msg::print ("%s%s\r", status.c_str(), blanks.c_str());
-      Msg::flush();
     }
 
+  else
+    {
+      player.display_tags();
+
+      if (Compat::element_query_position (player.playbin, GST_FORMAT_TIME, &pos) &&
+          Compat::element_query_duration (player.playbin, GST_FORMAT_TIME, &len))
+        {
+          guint pos_ms = (pos % GST_SECOND) / 1000000;
+          guint len_ms = (len % GST_SECOND) / 1000000;
+          guint pos_sec = pos / GST_SECOND;
+          guint len_sec = len / GST_SECOND;
+          guint pos_min = pos_sec / 60;
+          guint len_min = len_sec / 60;
+
+          player.overwrite_time_display();
+          Msg::print ("\rTime: %01u:%02u:%02u.%02u", pos_min / 60, pos_min % 60, pos_sec % 60, pos_ms / 10);
+          if (len > 0)   /* streams (i.e. http) have len == -1 */
+            Msg::print (" of %01u:%02u:%02u.%02u", len_min / 60, len_min % 60, len_sec % 60, len_ms / 10);
+
+          string message = Msg::status();
+          if (message != "")
+            {
+              Msg::print (" | %s", message.c_str());
+            }
+          else
+            {
+              /* only print bitrate if no status message needs to be shown, in
+               * order to avoid too long output lines
+               */
+              if (player.tags.bitrate > 0)
+                Msg::print (" | Bitrate: %.1f kbit/sec", player.tags.bitrate / 1000.);
+            }
+
+          string status, blanks;
+
+          // Print [REP1] if single repeat:
+          if (player.rep1)
+            status += " [REP1]";
+
+          // Print [STOP] if stop after current:
+          if (player.stop)
+            status += " [STOP]";
+
+          // Print [MUTED] if sound is muted:
+          gboolean mute;
+          g_object_get (G_OBJECT (player.playbin), "mute", &mute, NULL);
+
+          if (mute)
+            status += " [MUTED]";
+          else
+            blanks += "        ";
+
+          // Print [PAUSED] if paused:
+          bool pause = (player.last_state == GST_STATE_PAUSED);
+
+          if (pause)
+            status += " [PAUSED]";
+          else
+            blanks += "         ";
+
+          Msg::print ("%s%s\r", status.c_str(), blanks.c_str());
+          Msg::flush();
+        }
+    }
   /* call me again */
   return TRUE;
 }
@@ -1068,7 +1101,6 @@ idle_start_player (gpointer *data)
   /* do not call me again */
   return FALSE;
 }
-
 
 enum FileInfo { FI_DIR, FI_REG, FI_OTHER, FI_ERROR };
 
@@ -1207,7 +1239,7 @@ Player::process_input (int key)
       case '7':
       case '8':
       case '9':
-        play_next(key - '0');
+        pick_next(key);
         break;
       case 'L':
         show_list(true);
