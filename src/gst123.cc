@@ -54,6 +54,10 @@ using namespace Gst123;
 static Terminal     terminal;
 static GtkInterface gtk_interface;
 
+// ANSI control sequences
+static const char *curs_off = "\e[?25l";
+static const char *curs_on  = "\e[?25h";
+
 struct Tags
 {
   double timestamp;
@@ -290,6 +294,7 @@ struct Player : public KeyHandler
     for (int i = 0; i < cols; i++)
       Msg::print (" ");
     Msg::print ("\r");
+    Msg::print (curs_off);
   }
 
   void
@@ -690,6 +695,7 @@ struct Player : public KeyHandler
     // End with a newline to preserve the time so the user knows where they
     // left off.
     Msg::print ("\n\n");
+    Msg::print (curs_on);
 
     gst_element_set_state (playbin, GST_STATE_NULL);
     if (loop)
