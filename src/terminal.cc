@@ -108,6 +108,8 @@ Terminal::init_terminal()
   tio_new.c_cc[VTIME] = 1; /* 0.1 seconds */
   tcsetattr (0, TCSANOW, &tio_new);
 
+  // cursor_invisible | civis
+  print_term ("vi");
   // enable keypad_xmit
   print_term ("ks");
   fflush (stdout);
@@ -160,6 +162,8 @@ void
 Terminal::end()
 {
   tcsetattr(0,TCSANOW,&tio_orig);
+  // cursor_normal | cnorm
+  print_term ("ve");
   // disable keypad xmit
   print_term("ke");
 }

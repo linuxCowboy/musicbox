@@ -54,10 +54,6 @@ using namespace Gst123;
 static Terminal     terminal;
 static GtkInterface gtk_interface;
 
-// ANSI control sequences
-static const char *curs_off = "\e[?25l";
-static const char *curs_on  = "\e[?25h";
-
 struct Tags
 {
   double timestamp;
@@ -164,6 +160,7 @@ struct Player : public KeyHandler
 
   GstElement   *playbin;
   GMainLoop    *loop;
+  char         *clr_line;
 
   guint         play_position;
   int           cols;
@@ -294,7 +291,6 @@ struct Player : public KeyHandler
     for (int i = 0; i < cols; i++)
       Msg::print (" ");
     Msg::print ("\r");
-    Msg::print (curs_off);
   }
 
   void
@@ -695,7 +691,6 @@ struct Player : public KeyHandler
     // End with a newline to preserve the time so the user knows where they
     // left off.
     Msg::print ("\n\n");
-    Msg::print (curs_on);
 
     gst_element_set_state (playbin, GST_STATE_NULL);
     if (loop)
@@ -1008,24 +1003,22 @@ cb_print_position (gpointer *data)
   static guint dur;
   static string last;
 
-  ++dur;
   if (player.track.size())
     {
-      if (!(dur % 6))
+      if (last != player.track)
         {
-          if (last == player.track)
-            {
-              guint ui = atoi(last.c_str());
-              last.clear();
-              player.track.clear();
-              player.play_next(ui);
-            }
-          else
-            {
-              player.overwrite_time_display();
-              g_print(" %s", player.track.c_str());
-              last = player.track;
-            }
+          printf (player.clr_line);
+          printf ("\r %s", player.track.c_str());
+          fflush (stdout);
+          last = player.track;
+          dur = time(NULL);
+        }
+      else if (dur + 2 <= time(NULL))
+        {
+          guint ui = atoi(last.c_str());
+          last.clear();
+          player.track.clear();
+          player.play_next(ui);
         }
     }
 
@@ -1306,8 +1299,8 @@ Player::print_keyboard_help()
   printf ("   Backspace            -     playback rate 1x\n");
   printf ("   n                    -     play next file\n");
   printf ("   p                    -     play prev file\n");
-  printf ("   0                    -     play 1. file\n");
-  printf ("   1-9                  -     play current+n. file\n");
+  printf ("   0                    -     play last file\n");
+  printf ("   1-9                  -       *jukebox*\n");
   printf ("   l                    -     list playlist\n");
   printf ("   L                    -     with full path\n");
   printf ("   q                    -     quit gst123\n");
@@ -1459,6 +1452,7 @@ main (gint   argc,
 
   /* now run */
   terminal.init (player.loop, &player);
+  player.clr_line = tgetstr ("ce", NULL);
   g_main_loop_run (player.loop);
   terminal.end();
   gtk_interface.end();

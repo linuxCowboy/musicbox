@@ -50,4 +50,9 @@ I added some often used features.
 
 ![Help Screen](pics/features2.png)  
 
+-----
+
+# NEW
+
+*Musikbox* with direct title select.
 
