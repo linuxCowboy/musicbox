@@ -205,13 +205,13 @@ GtkInterface::window_xid_nolock() const
 }
 
 void
-GtkInterface::show()
+GtkInterface::show(int width, int height)
 {
   if (gtk_window != NULL && !gtk_window_visible)
     {
       // resize avoids showing big windows (avoids vertical or horizontal maximization)
-      gtk_window_resize (GTK_WINDOW (gtk_window), 100, 100);
-
+      gtk_window_resize (GTK_WINDOW (gtk_window), width, height);
+      gtk_window_set_position (GTK_WINDOW (gtk_window), GTK_WIN_POS_CENTER);
       gtk_widget_show_all (gtk_window);
 
       // restore fullscreen & maximized state

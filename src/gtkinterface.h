@@ -55,7 +55,7 @@ public:
 
   void init (int *argc, char ***argv, class KeyHandler *key_handler);
   void end();
-  void show();
+  void show(int width, int height);
   void hide();
   bool init_ok();
   gulong window_xid_nolock() const;
