@@ -167,6 +167,8 @@ struct Player : public KeyHandler
   int           stop;
   int           wait;
   int           rep1;
+  int           vwid = 640;
+  int           vhei = 400;
   Tags          tags;
   GstState      last_state;
   string        old_tag_str;
@@ -788,7 +790,7 @@ caps_set_cb (GObject *pad, GParamSpec *pspec, Player* player)
           // resize window to match video size (must run in main thread, so we use an idle handler)
 
           g_idle_add ((GSourceFunc) IdleResizeWindow::callback,
-                      new IdleResizeWindow (width, height));
+                      new IdleResizeWindow (player->vwid, player->vhei));
         }
       gst_caps_unref (caps);
     }
@@ -961,7 +963,7 @@ my_bus_callback (GstBus * bus, GstMessage * message, gpointer data)
       if (gtk_interface.init_ok())
         {
           if (n_video || vis_plugin)
-            gtk_interface.show();
+            gtk_interface.show(player.vwid, player.vhei);
           else
             gtk_interface.hide();
         }
