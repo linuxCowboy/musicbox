@@ -50,6 +50,7 @@ public:
   char         *audio_output;
   char         *subtitle;
   char         *visualization;
+  char         *video_size;
 
   Options ();
   void parse (int argc, char **argv);

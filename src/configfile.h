@@ -22,6 +22,7 @@ class ConfigFile
 {
   std::string m_audio_output;
   std::string m_visualization;
+  std::string m_video_size;
 
 public:
   static ConfigFile& the();       // Singleton
@@ -30,4 +31,5 @@ public:
 
   std::string audio_output() const;
   std::string visualization() const;
+  std::string video_size() const;
 };

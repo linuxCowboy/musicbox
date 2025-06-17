@@ -47,6 +47,7 @@ Options::Options ()
   fullscreen = FALSE;
   uris = NULL;
   audio_output = NULL;
+  video_size = NULL;
   print_visualization_list = FALSE;
   visualization = NULL;
   skip = 0;
@@ -59,6 +60,10 @@ Options::Options ()
   string default_visualization = ConfigFile::the().visualization();
   if (default_visualization != "")
     visualization = g_strdup (default_visualization.c_str()); // leak copy
+
+  string default_video_size = ConfigFile::the().video_size();
+  if (default_video_size != "")
+    video_size = g_strdup (default_video_size.c_str());
 }
 
 void
@@ -84,6 +89,8 @@ Options::parse (int argc, char **argv)
       "Play files in random order forever", NULL},
     {"novideo", 'x', 0, G_OPTION_ARG_NONE, &instance->novideo,
       "Do not play the video stream", NULL},
+    {"video-size", 'X', 0, G_OPTION_ARG_STRING, &instance->video_size,
+      "Set video/plugin size (default 640x400)", "<WxH>"},
     {"fullscreen", 'f', 0, G_OPTION_ARG_NONE, &instance->fullscreen,
       "Use fullscreen video output", NULL},
     {"audio-output", 'a', 0, G_OPTION_ARG_STRING, &instance->audio_output,

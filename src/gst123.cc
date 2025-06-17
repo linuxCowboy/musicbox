@@ -1406,6 +1406,11 @@ main (gint   argc,
           return -1;
         }
     }
+  if (options.video_size)
+    {
+      player.vwid = atoi(strtok (options.video_size, "x"));
+      player.vhei = atoi(strtok (NULL, ""));
+    }
   if (options.audio_output)
     {
       char *audio_driver = strtok (options.audio_output, "=");
