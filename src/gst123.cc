@@ -173,6 +173,7 @@ struct Player : public KeyHandler
   GstState      last_state;
   string        old_tag_str;
   string        track;
+  string        vsize;
 
   double        playback_rate;
   double        playback_rate_step;
@@ -265,6 +266,7 @@ struct Player : public KeyHandler
     if (tags.codec != "" || tags.vcodec != "")
       tag_str += make_n_char_string ("Codec   : " + tags.codec + " (audio) " + ((tags.vcodec != "") ? tags.vcodec + " (video)":""), cols / 2 - 1) + "\n";
 
+    tag_str += vsize;
     return tag_str;
   }
 
@@ -787,8 +789,10 @@ caps_set_cb (GObject *pad, GParamSpec *pspec, Player* player)
 
       if (Compat::video_get_size (GST_PAD (pad), &width, &height))
         {
-          // resize window to match video size (must run in main thread, so we use an idle handler)
+          player->vsize = "Size    : " + std::to_string(player->vwid) + "x" + std::to_string(player->vhei) +
+                          "  (org: " +  std::to_string(width) + "x" + std::to_string(height) + ")\n";
 
+          // resize window to match video size (must run in main thread, so we use an idle handler)
           g_idle_add ((GSourceFunc) IdleResizeWindow::callback,
                       new IdleResizeWindow (player->vwid, player->vhei));
         }
