@@ -46,6 +46,12 @@ ConfigFile::visualization() const
   return m_visualization;
 }
 
+string
+ConfigFile::video_size() const
+{
+  return m_video_size;
+}
+
 ConfigFile::ConfigFile()
 {
   char *home = getenv ("XDG_CONFIG_HOME");
@@ -81,6 +87,10 @@ ConfigFile::ConfigFile()
       else if (cfg.command ("visualization", str))
         {
           m_visualization = str;
+        }
+      else if (cfg.command ("video_size", str))
+        {
+          m_video_size = str;
         }
       else
         {
