@@ -43,6 +43,7 @@ Options::Options ()
   shuffle = FALSE;
   verbose = FALSE;
   novideo = FALSE;
+  notags  = FALSE;
   quiet   = FALSE;
   fullscreen = FALSE;
   uris = NULL;
@@ -105,6 +106,8 @@ Options::parse (int argc, char **argv)
       "Set initial replay volume (in percent)", "<volume>" },
     {"subtitle", 's', 0, G_OPTION_ARG_STRING, &instance->subtitle,
       "Set subtitle file to use for video playback", "<subtitle_file>"},
+    {"notags", 't', 0, G_OPTION_ARG_NONE, &instance->notags,
+      "Don't display tags", NULL},
     {"quiet", 'q', 0, G_OPTION_ARG_NONE, &instance->quiet,
       "Don't display any messages", NULL},
     {G_OPTION_REMAINING, '\0', 0, G_OPTION_ARG_FILENAME_ARRAY, &instance->uris, "Movies to play", NULL},
