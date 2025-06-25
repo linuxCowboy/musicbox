@@ -1030,7 +1030,8 @@ cb_print_position (gpointer *data)
 
   else
     {
-      player.display_tags();
+      if (!options.notags)
+        player.display_tags();
 
       if (Compat::element_query_position (player.playbin, GST_FORMAT_TIME, &pos) &&
           Compat::element_query_duration (player.playbin, GST_FORMAT_TIME, &len))

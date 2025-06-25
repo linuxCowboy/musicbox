@@ -40,6 +40,7 @@ public:
   gboolean      shuffle;
   gboolean      repeat;
   gboolean      novideo;
+  gboolean      notags;
   gboolean      print_visualization_list;
   double        skip;
   double        initial_volume;
