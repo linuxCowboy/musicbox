@@ -532,7 +532,10 @@ struct Player : public KeyHandler
               {
                 puri = strrchr(puri, '/') + 1;
               }
-            printf ("%d%c %s\n", i, (i == play_position ? '*' : ' '), puri);
+            printf ("%s%d %s%s\n",
+                        (i == play_position ? "\e[1;33m" : ""),  // bold yellow
+                         i, puri,
+                        (i == play_position ? "\e[0m"    : ""));
           }
         printf ("\n");
       }
