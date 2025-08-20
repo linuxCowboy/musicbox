@@ -161,6 +161,7 @@ struct Player : public KeyHandler
   GstElement   *playbin;
   GMainLoop    *loop;
   char         *clr_line;
+  const char   *clr_scr = "\e[2J";
 
   guint         play_position;
   int           cols;
@@ -281,7 +282,7 @@ struct Player : public KeyHandler
           if (tag_str != old_tag_str)
             {
 	      overwrite_time_display();
-	      Msg::print ("\n%s\n", tag_str.c_str());
+	      Msg::print ("%s\n", tag_str.c_str());
               old_tag_str = tag_str;
             }
 
@@ -409,7 +410,7 @@ struct Player : public KeyHandler
               }
             else
               {
-                Msg::print ("\nPlaying %d %s\n", play_position, url_decode (uri).c_str());
+                show_list(false, true);
 
                 gtk_interface.set_title (get_basename (uri));
 
@@ -482,7 +483,7 @@ struct Player : public KeyHandler
               }
             else
               {
-                Msg::print ("\nPlaying %d %s\n", play_position, url_decode (uri).c_str());
+                show_list(false, true);
 
                 gtk_interface.set_title (get_basename (uri));
 
@@ -516,13 +517,28 @@ struct Player : public KeyHandler
   }
 
   void
-  show_list(bool path=false)
+  show_list(bool path=false, bool limit=false)
   {
-    if (uris.size())
+    guint rows = lines - (options.notags ? 3 : 9);  // in term.h
+    guint list = uris.size();
+    guint max = list;
+    gint min = 0;
+
+    if (list)
       {
 	overwrite_time_display();
+        printf (clr_scr);
 
-        for (guint i = 0; i < uris.size();)
+        if (limit && list > rows)
+          {
+            min = MAX((gint) (play_position - rows / 2 - rows % 2), 0);
+            max = MIN(min + rows, list);
+
+            if (max - min < rows)
+              min = MAX((gint) (max - rows), 0);
+          }
+
+        for (guint i = min; i < max;)
           {
             string uri = uris[i++];
                    uri = url_decode (uri);
