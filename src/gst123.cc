@@ -170,6 +170,7 @@ struct Player : public KeyHandler
   int           rep1;
   int           vwid = 640;
   int           vhei = 400;
+  gint64        part = 0;
   Tags          tags;
   GstState      last_state;
   string        old_tag_str;
@@ -573,7 +574,7 @@ struct Player : public KeyHandler
   }
 
   void
-  seek (gint64 new_pos)
+  seek (gint64 new_pos, bool accurate=false)
   {
 //    overwrite_time_display();
 
@@ -608,7 +609,12 @@ struct Player : public KeyHandler
         start_pos = 0;
         stop_pos = new_pos;
       }
-    gst_element_seek (playbin, playback_rate, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH,
+
+    guint sflag = GST_SEEK_FLAG_FLUSH;
+    if (accurate)
+      sflag |= GST_SEEK_FLAG_ACCURATE;
+
+    gst_element_seek (playbin, playback_rate, GST_FORMAT_TIME, (GstSeekFlags) sflag,
                       GST_SEEK_TYPE_SET, start_pos, GST_SEEK_TYPE_SET, stop_pos);
   }
 
@@ -620,6 +626,26 @@ struct Player : public KeyHandler
 
     double new_pos_sec = cur_pos * (1.0 / GST_SECOND) + displacement;
     seek (new_pos_sec * GST_SECOND);
+  }
+
+  void
+  set_part ()
+  {
+    gint64 pos;
+
+    if (Compat::element_query_position (playbin, GST_FORMAT_TIME, &pos))
+      part = pos;
+  }
+
+  void
+  play_part ()
+  {
+    gint64 len;
+
+    if (part)
+      if (Compat::element_query_duration (playbin, GST_FORMAT_TIME, &len))
+        if (len > part)
+          seek (part, true);
   }
 
   void
@@ -1208,6 +1234,13 @@ Player::process_input (int key)
       case KEY_HANDLER_PAGE_DOWN:
         relative_seek (-600);
         break;
+      case 'x':
+        set_part();
+        break;
+      case 'y':
+      case 'z':
+        play_part();
+        break;
       case 'Q':
       case 'q':
         quit();
@@ -1306,32 +1339,34 @@ Player::print_keyboard_help()
   overwrite_time_display();
 
   printf ("\n");
-  printf ("==================== gst123 keyboard commands =======================\n");
-  printf ("   cursor left/right    -     seek 10 seconds backwards/forwards\n");
-  printf ("   cursor down/up       -     seek 1  minute  backwards/forwards\n");
-  printf ("   page down/up         -     seek 10 minute  backwards/forwards\n");
-  printf ("   +/-                  -     increase/decrease volume by 10%%\n");
-  printf ("   space                -     toggle pause\n");
-  printf ("   t                    -     toggle stop after current\n");
-  printf ("   r                    -     toggle single repeat\n");
-  printf ("   m                    -     toggle mute/unmute\n");
-  printf ("   f                    -     toggle fullscreen (only for videos)\n");
-  printf ("   o                    -     normal video size (only for videos)\n");
-  printf ("   A/a                  -     increase/decrease opacity by 10%% (only for videos)\n");
-  printf ("   s                    -     toggle subtitles  (only for videos)\n");
-  printf ("   R                    -     reverse playback\n");
-  printf ("   [ ]                  -     playback rate 10%% faster/slower\n");
-  printf ("   { }                  -     playback rate 2x faster/slower\n");
-  printf ("   Backspace            -     playback rate 1x\n");
-  printf ("   n                    -     play next file\n");
-  printf ("   p                    -     play prev file\n");
-  printf ("   0                    -     play last file\n");
-  printf ("   1-9                  -       *jukebox*\n");
-  printf ("   l                    -     list playlist\n");
-  printf ("   L                    -     with full path\n");
-  printf ("   q                    -     quit gst123\n");
-  printf ("   ?|h                  -     this help\n");
-  printf ("=====================================================================\n");
+  printf ("========================== Musicbox keyboard commands ==========================\n");
+  printf ("  cursor left/right    -     seek 10 seconds backwards/forwards\n");
+  printf ("  cursor down/up       -     seek 1  minute  backwards/forwards\n");
+  printf ("  page down/up         -     seek 10 minute  backwards/forwards\n");
+  printf ("  +/-                  -     increase/decrease volume by 10%%\n");
+  printf ("  space                -     toggle pause\n");
+  printf ("  t                    -     toggle stop after current\n");
+  printf ("  r                    -     toggle single repeat\n");
+  printf ("  m                    -     toggle mute/unmute\n");
+  printf ("  f                    -     toggle fullscreen (only for videos)\n");
+  printf ("  o                    -     normal video size (only for videos)\n");
+  printf ("  A/a                  -     increase/decrease opacity by 10%% (only for videos)\n");
+  printf ("  s                    -     toggle subtitles  (only for videos)\n");
+  printf ("  R                    -     reverse playback\n");
+  printf ("  [ ]                  -     playback rate 10%% faster/slower\n");
+  printf ("  { }                  -     playback rate 2x faster/slower\n");
+  printf ("  Backspace            -     playback rate 1x\n");
+  printf ("  n                    -     play next file\n");
+  printf ("  p                    -     play prev file\n");
+  printf ("  0                    -     play last file\n");
+  printf ("  1-9                  -       *jukebox*\n");
+  printf ("  l                    -     list playlist\n");
+  printf ("  L                    -     with full path\n");
+  printf ("  x                    -     mark favorite position\n");
+  printf ("  y|z                  -     seek favorite position\n");
+  printf ("  h|?                  -     help\n");
+  printf ("  q                    -     quit\n");
+  printf ("================================================================================\n");
   printf ("\n\n");
 }
 
