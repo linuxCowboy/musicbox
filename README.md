@@ -8,31 +8,30 @@ Like in old times with **Winamp**!
 
 ### Added features:
 
-- play title `1-9`
-- play last title `0`
-- play previous title `p`
 - permanent playlist
-- list playlist `l`
-- with full path `L`
-- stop after current `t`
 - colorize current title
-- single repeat `r`
-- delay between repeats
 - hide cursor
-- hide tags `-t|--notags`
 - center video
 - show video size
-- set video size `-X|--video-size=<WxH>`
 - video_size config option
-- help screen `h`
 
 ### Added options:
 
-![Options](pics/options.png)  
+- set video size `-X|--video-size=<WxH>`
+- hide tags `-t|--notags`
 
 ### Added hotkeys:
 
-![Options](pics/hotkeys.png)  
+- play title `1-9`
+- play last title `0`
+- play previous title `p`
+- mark favorite position `x`
+- seek favorite position `y` `z`
+- stop after current `t`
+- single repeat `r`
+- list playlist `l`
+- with full path `L`
+- help screen `h`
 
 ... I originally just wanted to add the backwards key.
 

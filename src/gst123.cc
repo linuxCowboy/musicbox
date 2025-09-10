@@ -157,6 +157,7 @@ Options options;
 struct Player : public KeyHandler
 {
   vector<string> uris;
+  vector<gint64> mark;
 
   GstElement   *playbin;
   GMainLoop    *loop;
@@ -305,6 +306,7 @@ struct Player : public KeyHandler
 
     play_position--;
     uris.erase (uris.begin() + play_position);
+    mark.erase (mark.begin() + play_position);
   }
 
   bool
@@ -548,9 +550,11 @@ struct Player : public KeyHandler
               {
                 puri = strrchr(puri, '/') + 1;
               }
-            printf ("%s%d %s%s\n",
+            printf ("%s% 4d%s %s%s\n",
                         (i == play_position ? "\e[1;33m" : ""),  // bold yellow
-                         i, puri,
+                         i,
+                        (mark[i] ? "+" : " "),
+                         puri,
                         (i == play_position ? "\e[0m"    : ""));
           }
         printf ("\n");
@@ -573,7 +577,7 @@ struct Player : public KeyHandler
   }
 
   void
-  seek (gint64 new_pos)
+  seek (gint64 new_pos, bool accurate=false)
   {
 //    overwrite_time_display();
 
@@ -608,7 +612,12 @@ struct Player : public KeyHandler
         start_pos = 0;
         stop_pos = new_pos;
       }
-    gst_element_seek (playbin, playback_rate, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH,
+
+    guint sflag = GST_SEEK_FLAG_FLUSH;
+    if (accurate)
+      sflag |= GST_SEEK_FLAG_ACCURATE;
+
+    gst_element_seek (playbin, playback_rate, GST_FORMAT_TIME, (GstSeekFlags) sflag,
                       GST_SEEK_TYPE_SET, start_pos, GST_SEEK_TYPE_SET, stop_pos);
   }
 
@@ -620,6 +629,26 @@ struct Player : public KeyHandler
 
     double new_pos_sec = cur_pos * (1.0 / GST_SECOND) + displacement;
     seek (new_pos_sec * GST_SECOND);
+  }
+
+  void
+  set_part ()
+  {
+    gint64 pos;
+
+    if (Compat::element_query_position (playbin, GST_FORMAT_TIME, &pos))
+      mark[play_position] = pos;
+  }
+
+  void
+  play_part ()
+  {
+    gint64 len;
+
+    if (mark[play_position])
+      if (Compat::element_query_duration (playbin, GST_FORMAT_TIME, &len))
+        if (len > mark[play_position])
+          seek (mark[play_position], true);
   }
 
   void
@@ -1191,10 +1220,10 @@ Player::process_input (int key)
   switch (key)
     {
       case KEY_HANDLER_RIGHT:
-        relative_seek (10);
+        relative_seek (20);
         break;
       case KEY_HANDLER_LEFT:
-        relative_seek (-10);
+        relative_seek (-5);
         break;
       case KEY_HANDLER_UP:
         relative_seek (60);
@@ -1207,6 +1236,15 @@ Player::process_input (int key)
         break;
       case KEY_HANDLER_PAGE_DOWN:
         relative_seek (-600);
+        break;
+      case 'x':
+        set_part();
+        show_list(false, true);
+        break;
+      case 'y':
+      case 'z':
+        play_part();
+        show_list(false, true);
         break;
       case 'Q':
       case 'q':
@@ -1306,32 +1344,34 @@ Player::print_keyboard_help()
   overwrite_time_display();
 
   printf ("\n");
-  printf ("==================== gst123 keyboard commands =======================\n");
-  printf ("   cursor left/right    -     seek 10 seconds backwards/forwards\n");
-  printf ("   cursor down/up       -     seek 1  minute  backwards/forwards\n");
-  printf ("   page down/up         -     seek 10 minute  backwards/forwards\n");
-  printf ("   +/-                  -     increase/decrease volume by 10%%\n");
-  printf ("   space                -     toggle pause\n");
-  printf ("   t                    -     toggle stop after current\n");
-  printf ("   r                    -     toggle single repeat\n");
-  printf ("   m                    -     toggle mute/unmute\n");
-  printf ("   f                    -     toggle fullscreen (only for videos)\n");
-  printf ("   o                    -     normal video size (only for videos)\n");
-  printf ("   A/a                  -     increase/decrease opacity by 10%% (only for videos)\n");
-  printf ("   s                    -     toggle subtitles  (only for videos)\n");
-  printf ("   R                    -     reverse playback\n");
-  printf ("   [ ]                  -     playback rate 10%% faster/slower\n");
-  printf ("   { }                  -     playback rate 2x faster/slower\n");
-  printf ("   Backspace            -     playback rate 1x\n");
-  printf ("   n                    -     play next file\n");
-  printf ("   p                    -     play prev file\n");
-  printf ("   0                    -     play last file\n");
-  printf ("   1-9                  -       *jukebox*\n");
-  printf ("   l                    -     list playlist\n");
-  printf ("   L                    -     with full path\n");
-  printf ("   q                    -     quit gst123\n");
-  printf ("   ?|h                  -     this help\n");
-  printf ("=====================================================================\n");
+  printf ("========================== Musicbox keyboard commands ==========================\n");
+  printf ("  cursor left/right    -     seek 5/20 seconds backwards/forwards\n");
+  printf ("  cursor down/up       -     seek   60 seconds backwards/forwards\n");
+  printf ("  page down/up         -     seek  600 seconds backwards/forwards\n");
+  printf ("  +/-                  -     increase/decrease volume by 10%%\n");
+  printf ("  space                -     toggle pause\n");
+  printf ("  t                    -     toggle stop after current\n");
+  printf ("  r                    -     toggle single repeat\n");
+  printf ("  m                    -     toggle mute/unmute\n");
+  printf ("  f                    -     toggle fullscreen (only for videos)\n");
+  printf ("  o                    -     normal video size (only for videos)\n");
+  printf ("  A/a                  -     increase/decrease opacity by 10%% (only for videos)\n");
+  printf ("  s                    -     toggle subtitles  (only for videos)\n");
+  printf ("  R                    -     reverse playback\n");
+  printf ("  [ ]                  -     playback rate 10%% faster/slower\n");
+  printf ("  { }                  -     playback rate 2x faster/slower\n");
+  printf ("  Backspace            -     playback rate 1x\n");
+  printf ("  n                    -     play next file\n");
+  printf ("  p                    -     play prev file\n");
+  printf ("  0                    -     play last file\n");
+  printf ("  1-9                  -       *jukebox*\n");
+  printf ("  l                    -     list playlist\n");
+  printf ("  L                    -     with full path\n");
+  printf ("  x                    -     mark favorite position\n");
+  printf ("  y|z                  -     seek favorite position\n");
+  printf ("  h|?                  -     help\n");
+  printf ("  q                    -     quit\n");
+  printf ("================================================================================\n");
   printf ("\n\n");
 }
 
@@ -1408,6 +1448,7 @@ main (gint   argc,
         }
       g_free (playlist_dirname);
     }
+
   /* make sure we have a URI */
   if (player.uris.empty())
     {
@@ -1416,12 +1457,16 @@ main (gint   argc,
         printf ("%s", options.usage.c_str());
       return -1;
     }
+
+  player.mark.resize(player.uris.size() + 1);
+
   player.playbin = Compat::create_playbin ("play");
   if (options.novideo)
     {
       GstElement *fakesink = gst_element_factory_make ("fakesink", "novid");
       g_object_set (G_OBJECT (player.playbin), "video-sink", fakesink, NULL);
     }
+
   if (options.visualization)
     {
       if (!Visualization::setup (player.playbin))
@@ -1430,11 +1475,13 @@ main (gint   argc,
           return -1;
         }
     }
+
   if (options.video_size)
     {
       player.vwid = atoi(strtok (options.video_size, "x"));
       player.vhei = atoi(strtok (NULL, ""));
     }
+
   if (options.audio_output)
     {
       char *audio_driver = strtok (options.audio_output, "=");
@@ -1465,10 +1512,12 @@ main (gint   argc,
           g_object_set (G_OBJECT (player.playbin), "audio-sink", audio_sink, NULL);
         }
     }
+
   if (options.initial_volume >= 0)
     {
       g_object_set (G_OBJECT (player.playbin), "volume", options.initial_volume / 100, NULL);
     }
+
   if (options.subtitle)
     {
       player.set_subtitle (options.subtitle);
