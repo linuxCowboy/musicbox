@@ -1150,7 +1150,7 @@ idle_start_player (gpointer *data)
 {
   Player& player = *(Player *)data;
 
-  player.play_next();
+  player.play_next(options.begin);
 
   /* do not call me again */
   return FALSE;

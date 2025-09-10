@@ -17,6 +17,7 @@ Like in old times with **Winamp**!
 
 ### Added options:
 
+- start title `-b|--begin=<n>`
 - set video size `-X|--video-size=<WxH>`
 - hide tags `-t|--notags`
 

@@ -52,6 +52,7 @@ Options::Options ()
   print_visualization_list = FALSE;
   visualization = NULL;
   skip = 0;
+  begin = 1;
   initial_volume = -1; // don't touch volume setting when started
 
   string default_audio_output = ConfigFile::the().audio_output();
@@ -82,6 +83,8 @@ Options::parse (int argc, char **argv)
       gpointer (static_cast<GOptionArgFunc> (Options::print_full_version)), "Print full version", NULL },
     {"verbose", '\0', 0, G_OPTION_ARG_NONE, &instance->verbose,
       "Print GStreamer pipeline used to play files", NULL},
+    {"begin", 'b', 0, G_OPTION_ARG_INT, &instance->begin,
+      "Begin with title number 'n' (0 = last)", "<n>"},
     {"repeat", 'r', 0, G_OPTION_ARG_NONE, &instance->repeat,
       "Repeat playlist forever", NULL},
     {"shuffle", 'z', 0, G_OPTION_ARG_NONE, &instance->shuffle,

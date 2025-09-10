@@ -36,6 +36,7 @@ public:
   std::string   usage;
 
   // variables filled via command line options:
+  int           begin;
   gboolean      verbose;
   gboolean      shuffle;
   gboolean      repeat;
